@@ -1,36 +1,40 @@
-import telebot
 import os
+import telebot
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8195125858:AAEg_pQ5sfjRIrY1aJ0kJNe64jP-TPClu54")
+ADMIN_ID = int(os.getenv("994136906"))  # твой Telegram ID
+
 bot = telebot.TeleBot(TOKEN)
 
-# Sample product database (you can later connect this to your Django backend or API)
-products = {
-    "iphone": "📱 iPhone 14 - $999\nBuy now: https://uzum.uz/product/iphone-14",
-    "macbook": "💻 MacBook Pro - $1999\nBuy now: https://uzum.uz/product/macbook-pro",
-    "headphones": "🎧 Sony WH-1000XM5 - $299\nBuy now: https://uzum.uz/product/sony-headphones"
-}
+# Сохраняем соответствие между сообщением и пользователем
+user_messages = {}
 
 @bot.message_handler(commands=['start'])
-def welcome(message):
-    bot.send_message(
-        message.chat.id,
-        "👋 Welcome to Uzum Market Assistant!\nType a product name like 'iPhone' or 'MacBook' to get started."
-    )
+def start(message):
+    bot.send_message(message.chat.id, "👋 Привет! Напиши своё сообщение, и мы скоро ответим.")
 
 @bot.message_handler(func=lambda message: True)
-def product_lookup(message):
-    query = message.text.lower()
-    response = products.get(query)
+def forward_to_admin(message):
+    if message.chat.id != ADMIN_ID:
+        # Сохраняем ID пользователя по ID сообщения
+        user_messages[message.message_id] = message.chat.id
 
-    if response:
-        bot.send_message(message.chat.id, response)
+        # Пересылаем админу с инфой
+        forward_text = f"📩 Новое сообщение от @{message.from_user.username or 'без username'} (ID: {message.chat.id}):\n\n{message.text}"
+        sent = bot.send_message(ADMIN_ID, forward_text)
+        
+        # Запоминаем связь между сообщениями
+        user_messages[sent.message_id] = message.chat.id
+
+        bot.send_message(message.chat.id, "✅ Ваше сообщение отправлено. Ожидайте ответа.")
     else:
-        bot.send_message(
-            message.chat.id,
-            "❌ Sorry, I couldn't find that product.\nTry searching for 'iPhone', 'MacBook', or 'Headphones'."
-        )
+        # Админ отвечает — проверим, ответ ли это на сообщение
+        if message.reply_to_message and message.reply_to_message.message_id in user_messages:
+            user_id = user_messages[message.reply_to_message.message_id]
+            bot.send_message(user_id, f"💬 Ответ от поддержки:\n\n{message.text}")
+        else:
+            bot.send_message(ADMIN_ID, "⚠️ Чтобы ответить пользователю, используйте функцию ответа (Reply) на его сообщение.")
 
-if __name__ == "__main__":
-    print("🤖 Uzum Market Bot is running...")
+if __name__ == '__main__':
+    print("🤖 Support bot is running...")
     bot.infinity_polling()
