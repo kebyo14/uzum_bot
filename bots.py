@@ -1,8 +1,9 @@
 import os
 import telebot
 
-TOKEN = os.getenv("8195125858:AAEg_pQ5sfjRIrY1aJ0kJNe64jP-TPClu54")
-ADMIN_ID = int(os.getenv("994136906"))  # твой Telegram ID
+TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+
 
 bot = telebot.TeleBot(TOKEN)
 
